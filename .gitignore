@@ -1,0 +1,8 @@
+.envrc
+.env
+*/__pycache__/
+db.sqlite3
+SimpleVideoDownloader.crx
+Vimego.crx
+VimegoSimple-Video-Downloader.crx
+venv/
