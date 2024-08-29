@@ -1,0 +1,18 @@
+<table >
+    <tr>
+        <th>Id</th>
+        <th>External Course Id</th>
+        <th>Title</th>
+        <th>Link</th>
+        <th>Type</th>
+    </tr>
+    {% for course in courses %}
+        <tr>
+            <td>{{ course.id }}</td>
+            <td>{{ course.external_id }}</td>
+            <td>{{ course.title }}</td>
+            <td>{{ course.link }}</td>
+            <td>{{ course.type }}</td>
+        </tr>
+    {% endfor %}
+</table>
