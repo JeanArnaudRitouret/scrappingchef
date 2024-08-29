@@ -8,6 +8,7 @@ urlpatterns = [
     path("list_courses/", views.list_courses, name="list_courses"),
     path("get_modules/", views.get_modules, name="get_modules"),
     path("get_module_with_id/<int:external_course_id>", views.get_module_with_id, name="get_module_with_id"),
+    path("list_modules/", views.list_modules, name="list_modules"),
     path("list_modules/<int:external_course_id>", views.list_modules, name="list_modules"),
     path("get_contents/", views.get_contents, name="get_contents"),
     path("get_missing_contents/", views.get_missing_contents, name="get_missing_contents"),

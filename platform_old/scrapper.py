@@ -36,8 +36,9 @@ class SeleniumScrapper():
         if extension_vimeo_video_downloader:
             options.add_extension(f"{os.environ['PATH_VIDEO_DOWNLOADER']}")
         options.add_argument('--disable-search-engine-choice-screen')
+        service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(
-            ChromeDriverManager().install(),
+            service=service,
             options=options
         )
         if extension_vimeo_video_downloader:

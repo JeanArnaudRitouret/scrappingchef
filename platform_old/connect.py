@@ -1,11 +1,12 @@
 import os
+from typing import List
 from dotenv import load_dotenv
 from .scrapper import SeleniumScrapper
 from .models import Course, Module, Content
 
 load_dotenv()
 
-def get_adc_courses():
+def get_platform_courses():
     scrapper = SeleniumScrapper()
     scrapper.logging(close_pop_up=True)
     scrapper.get_cookies()
@@ -13,7 +14,7 @@ def get_adc_courses():
     return scrapper.get_courses()
 
 
-def get_adc_modules(external_course_ids=None):
+def get_platform_modules(external_course_ids: list[int] | None = None):
     modules = []
     scrapper = SeleniumScrapper()
     scrapper.logging(close_pop_up=True)
@@ -25,7 +26,7 @@ def get_adc_modules(external_course_ids=None):
         modules += scrapper.get_modules(external_course_id=external_course_id)
     return modules
 
-def get_adc_contents(
+def get_platform_contents(
         external_course_id:int = 0,
         external_module_ids:list[int] = []
     ):
@@ -60,7 +61,7 @@ def get_adc_contents(
     return contents
 
 
-def get_adc_sub_modules(sub_modules_code:str = ''):
+def get_platform_sub_modules(sub_modules_code:str = ''):
     if sub_modules_code == 'aller_plus_loin':
         contents = Content.objects.filter(title__icontains="aller plus loin")
         content = contents[0]
@@ -71,4 +72,4 @@ def get_adc_sub_modules(sub_modules_code:str = ''):
 
 
 if __name__ == "__main__":
-    get_adc_courses()
+    get_platform_courses()
