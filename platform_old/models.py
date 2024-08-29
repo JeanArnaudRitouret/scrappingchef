@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 from .enums import CourseTypes, ModuleTypes, ContentTypes
 import re
@@ -27,7 +26,7 @@ class Course(models.Model):
         return self.type
 
     def get_external_id(self):
-        matchs = re.search('(https://ichefpro.com/course/view.php\?id=)(\d+)', self.link)
+        matchs = re.search(r'(https://ichefpro.com/course/view.php\?id=)(\d+)', self.link)
         if matchs:
             self.external_id = matchs.group(2)
         return self.external_id
@@ -53,7 +52,7 @@ class Module(models.Model):
         return self.title
 
     def get_external_id(self):
-        matchs = re.search('(https://ichefpro.com/mod/.*/view.php\?id=)(\d+)', self.link)
+        matchs = re.search(r'(https://ichefpro.com/mod/.*/view.php\?id=)(\d+)', self.link)
         if matchs:
             self.external_id = matchs.group(2)
         return self.external_id
