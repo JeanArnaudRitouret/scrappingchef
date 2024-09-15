@@ -1,7 +1,10 @@
 # scrappingchef
-A personal repo used to scrap cooking platforms.
+A personal repo used to scrap cooking platforms., for personnal training.
+These platforms are not public, hence no url, login or password information is provided.
 
-One django app is dedicated to scrapping an "old" platform that is not used anymore, and another app is dedicated to scrapping the "new" platform.
+The app "platform_old" is dedicated to scrapping a platform that has now become obsolete.
+The app "platform_new" will be dedicated to scrapping the platform replacing the old one.
+
 Another app will be dedicated to organising and accessing the content from both platforms.
 
 This repo is made for personal use and requires multiple settings to be effective:
