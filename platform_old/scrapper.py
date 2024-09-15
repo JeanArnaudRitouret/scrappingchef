@@ -5,16 +5,19 @@ import shutil
 import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import StaleElementReferenceException
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 import requests
 from dotenv import load_dotenv
 import requests
+import pdb
+
 
 from .enums import ModuleTypes, QuestionTypes
 from .models import Course, Module, Content, Quiz, Question, Answer
-from .utils import loop_until_get,check_if_folder_exists
+from .utils import loop_until_get,check_if_folder_exists, loop_until_pass
 
 load_dotenv()
 
@@ -22,7 +25,7 @@ class SeleniumScrapper():
 
     driver = None
     cookies = None
-    internal_path_downloaded_contents=os.environ['PATH_DOWNLOADED_CONTENTS']
+    internal_path_downloaded_contents=f"{os.environ['PATH_DOWNLOADED_CONTENTS']}/platform_old/"
     save_courses=True
     save_modules=True
     save_contents=True
@@ -542,7 +545,9 @@ class SeleniumScrapper():
             save_contents=True
         ) -> list[Content]:
         """
-        This function queries the modules with content to be scrapped, check if the contents already exists, and scraps it otherwise.
+        This function queries the modules with content to be scrapped.
+        The list of modules is eitheer all the modules related to the external_course_id or the list of external_module_ids.
+        Then for each module we check if the contents already exists, and scraps it otherwise.
 
         Args:
             external_course_id (int, optional): _description_. Defaults to None.
@@ -559,14 +564,15 @@ class SeleniumScrapper():
         existing_content = Content.objects.all()
         self.save_contents = save_contents
 
-        # If a external_course_id is informed, we are getting the contents for the whole course
+        # If a external_course_id is informed, we are querying all the modules related to the course
         if external_course_id:
             modules = Module.objects.filter(course__external_id=external_course_id)
-        # If a external_module_id is informed, we are only getting the contents for the module
+        # If a list of external_module_id is informed, we are querying the modules
         elif external_module_ids:
             modules = Module.objects.filter(external_id__in=external_module_ids)
         else:
             raise Exception(f"Error: Either external_course_id or external_module_id requested to get contents")
+
 
         for module in modules:
             # if this module has already a related content, we don't need to create the content again
@@ -653,13 +659,20 @@ class SeleniumScrapper():
 
 
     def download_video(self, module):
-        # download and move video to right content folder (video can be without sound)
-        dowload_button=self.get_download_button(download_type='video')
-        if not dowload_button:
-            raise Exception(f"Error: no download button found. Not enough time to get the download button?")
-        dowload_button.click()
 
+        # loop until 1/ we get the download button and 2/ it is clickable (and not stale for instance)
+
+        loop_until_pass(
+            pass_function=self.get_and_click_download_button,
+            loop_limit=self.loop_limit,
+            error_if_limit_reached=True,
+            download_type='video'
+        )
+
+        # let it sleep to make sure we have downoaded the video
         time.sleep(5)
+
+        # move video to right content folder (video can be without sound)
         downloaded_video_path = max(glob.glob('/Users/jeanarnaudritouret/Downloads/*.mp4'), key=os.path.getctime)
         video_name = re.search('(/Users/jeanarnaudritouret/Downloads/)(.*.mp4)', downloaded_video_path).group(2)
         path_download_content = f"{self.internal_path_downloaded_contents}/{module.course_id}/{module.external_id}"
@@ -672,12 +685,29 @@ class SeleniumScrapper():
         return  video_name, copied_video_path
 
 
+    def get_and_click_download_button(self, download_type:str = ''):
+        # get the download button
+        download_button = loop_until_get(
+            get_function=self.get_download_button,
+            loop_limit=self.loop_limit,
+            error_if_limit_reached=True,
+            download_type=download_type
+        )
+        # download the video
+        download_button.click()
+        pass
+
+
     def download_audio(self, module):
         # download and move video to right content folder (video can be without sound)
-        dowload_button=self.get_download_button(download_type='audio')
-        if not dowload_button:
+        download_button=self.get_download_button(download_type='audio')
+        if not download_button:
             return None, None
-        dowload_button.click()
+        try:
+            download_button.click()
+        except StaleElementReferenceException as e:
+            print("StaleElementReferenceException caught!")
+            pdb.set_trace()
 
         time.sleep(5)
         downloaded_audio_path = max(glob.glob('/Users/jeanarnaudritouret/Downloads/*.mp4'), key=os.path.getctime)
@@ -693,16 +723,27 @@ class SeleniumScrapper():
 
 
     def get_download_button(self, download_type:str = ''):
-        loop_limit = self.loop_limit if download_type == 'video' else 10
-        for i in range(loop_limit):
-            buttons = self.driver.find_elements(by = 'tag name', value = "button")
-            breakpoint()
-            buttons_dict = {button.text: button for button in buttons}
-            if download_type == 'video' and self.video_download_quality in buttons_dict.keys():
-                return buttons_dict[self.video_download_quality]
-            if download_type == 'audio' and self.audio_download_code in buttons_dict.keys():
-                return buttons_dict[self.audio_download_code]
+        buttons_dict = loop_until_get(
+            get_function=self.get_buttons_dict,
+            loop_limit=self.loop_limit,
+            error_if_limit_reached=True
+        )
+        if download_type == 'video' and self.video_download_quality in buttons_dict.keys():
+            return buttons_dict[self.video_download_quality]
+        if download_type == 'audio' and self.audio_download_code in buttons_dict.keys():
+            return buttons_dict[self.audio_download_code]
         return None
+
+
+    def get_buttons_dict(self):
+        buttons_dict = {}
+        buttons = self.driver.find_elements(by = 'tag name', value = "button")
+        for button in buttons:
+            try:
+                buttons_dict[button.text] = button
+            except StaleElementReferenceException:
+                continue
+        return buttons_dict
 
 
     def get_content_page(self, module=None):

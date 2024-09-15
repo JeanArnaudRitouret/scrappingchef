@@ -39,7 +39,10 @@ class Course(models.Model):
 class Module(models.Model):
     id = models.CharField(primary_key=True, max_length=100)
     external_id = models.IntegerField(null=False)
-    course=models.ForeignKey(to=Course, on_delete=models.CASCADE)
+    course=models.ForeignKey(
+        to=Course,
+        related_name='modules',
+        on_delete=models.CASCADE)
     title = models.CharField(max_length=500)
     type_extracted = models.CharField(max_length=200, null=True)
     type_cleaned = models.CharField(max_length=200, null=True)

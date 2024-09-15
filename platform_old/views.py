@@ -10,6 +10,15 @@ load_dotenv()
 
 
 def get_courses(request: Any | None = None):
+    """
+    Get the courses from the platform and render them in a template.
+    Create the courses in the database if they don't exist, only update the fields if they do.
+    Args:
+        request (Any | None, optional): Defaults to None.
+
+    Returns:
+        httpResponse: object with a rendered text which is a combination of a template with a context dictionary
+    """
     courses = get_platform_courses()
     context = {"courses": courses}
     return render(request, "platform_old/courses.html", context)
@@ -23,7 +32,9 @@ def list_courses(request: Any | None = None):
 
 def get_modules(request: Any | None = None) -> HttpResponse:
     """
-    Download the modules by looping through all the courses already downloaded.
+    Get the modules from all the courses already downloaded.
+    Doesn't get any module is no course has been downloaded.
+    Create the modules in the database if they don't exist, only update the fields if they do.
 
     Args:
         request (Any | None, optional). Defaults to None.
@@ -64,6 +75,16 @@ def list_modules(request: Any | None = None, external_course_id:int | None = Non
 
 
 def get_contents(request=None):
+    """
+    Get the contents from all the modules already downloaded.
+    If the content already exists, no download happens.
+
+    Args:
+        request (_type_, optional): Defaults to None.
+
+    Returns:
+        HttpResponse: object with a rendered text which is a combination of a template with a context dictionary
+    """
     contents = get_platform_contents(external_course_id=[])
     context = {"contents": contents}
     return render(request, "platform_old/contents.html", context)
