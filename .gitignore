@@ -1,10 +1,48 @@
-.envrc
-.env
 **/__pycache__/
 *.sqlite3
 SimpleVideoDownloader.crx
 Vimego.crx
 VimegoSimple-Video-Downloader.crx
-venv/
 migrations/
 contents/*
+# Ignore contents
+contents/
+platform_old/platform_old/[0-9]*/
+
+
+# Ignore virtual environment
+.envrc
+.env
+venv/
+.vscode/
+.idea/
+
+# Ignore compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore SQLite database files
+*.sqlite3
+db.sqlite3
+test_db.sqlite3
+
+# Ignore log files
+*.log
+
+# Ignore compiled files
+*.crx
+
+# Ignore Django static files (these are usually generated at runtime)
+static/
+
+# Ignore frontend build files (e.g., React or Vue builds)
+kokkeverkstedet/*
+kokkeverkstedet/asset-manifest.json
+kokkeverkstedet/static/
+kokkeverkstedet/logo192.png
+kokkeverkstedet/logo512.png
+
+# Ignore system files
+.DS_Store
+Thumbs.db
