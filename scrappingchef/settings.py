@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +34,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'bs4',
     'platform_old.apps.PlatformOldConfig',
+    'rest_framework',
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +45,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -50,6 +54,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Allow all origins (for development only)
+CORS_ALLOW_ALL_ORIGINS = True
+X_FRAME_OPTIONS = 'ALLOWALL'  # Allows iframes from the same origin (localhost in this case)
 
 ROOT_URLCONF = 'scrappingchef.urls'
 
@@ -126,3 +134,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+# URL path for media files
+MEDIA_URL = '/media/'
+# Directory where media files are stored
+MEDIA_ROOT = os.path.join(BASE_DIR, 'contents/platform_old')
