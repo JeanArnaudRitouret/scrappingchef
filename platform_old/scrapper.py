@@ -645,6 +645,8 @@ class SeleniumScrapper():
         request_module_video = requests.get(module_video_url, cookies=self.cookies)
         html_module_video = BeautifulSoup(request_module_video.text, 'html.parser')
         vimeo_video_url = html_module_video.find_all('iframe', id='plms-video')[0]['src']
+        if vimeo_video_url == 'https://player.vimeo.com/video/538582747?api=1&player_id=plms-video':
+            breakpoint()
         self.driver.get(vimeo_video_url)
 
         video_name, copied_video_path = self.download_video(module)
