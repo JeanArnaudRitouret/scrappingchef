@@ -3,10 +3,38 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from dotenv import load_dotenv
 from .models import Course, Module, Content
+from .serializers import CourseSerializer, ContentSerializer
 from .connect import get_platform_courses, get_platform_modules, get_platform_contents, get_platform_sub_modules
-from django.template import loader
+from rest_framework import generics
+from rest_framework.exceptions import NotFound
+from django.views.decorators.clickjacking import xframe_options_exempt
+from django.utils.decorators import method_decorator
+
 
 load_dotenv()
+
+# This is the API view for the courses - also includes nested modules
+class CourseList(generics.ListAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+
+# This is the API view for a module's content
+@method_decorator(xframe_options_exempt, name='dispatch')
+class ContentForModule(generics.ListAPIView):
+    serializer_class = ContentSerializer
+
+    def get_queryset(self):
+        module_id = self.kwargs.get('moduleID')
+        try:
+            return Content.objects.filter(module_id=module_id)
+        except Module.DoesNotExist:
+            raise NotFound(f"Module with ID '{module_id}' not found.")
+
+
+
+@xframe_options_exempt
+def index(request):
+    return render(request, 'index.html')
 
 
 def get_courses(request: Any | None = None):
