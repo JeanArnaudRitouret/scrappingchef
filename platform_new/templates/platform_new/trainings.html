@@ -1,0 +1,26 @@
+<table>
+    <tr>
+        <th>Training Id</th>
+        <th>Platform Training Id</th>
+        <th>Path</th>
+        <th>Title</th>
+        <th>Progression</th>
+        <th>Score</th>
+        <th>Type</th>
+        <th>Created Time</th>
+        <th>Updated Time</th>
+    </tr>
+    {% for training in trainings %}
+        <tr>
+            <td>{{ training.id }}</td>
+            <td>{{ training.platform_id }}</td>
+            <td>{{ training.path.title }}</td>
+            <td>{{ training.title }}</td>
+            <td>{{ training.progression }}</td>
+            <td>{{ training.score }}</td>
+            <td>{{ training.type }}</td>
+            <td>{{ training.created_time }}</td>
+            <td>{{ training.updated_time }}</td>
+        </tr>
+    {% endfor %}
+</table>

@@ -1,0 +1,22 @@
+<table >
+    <tr>
+        <th>Path Id</th>
+        <th>Platform Path Id</th>
+        <th>Title</th>
+        <th>Progression</th>
+        <th>Score</th>
+        <th>Created Time</th>
+        <th>Updated Time</th>
+    </tr>
+    {% for path in paths %}
+        <tr>
+            <td>{{ path.id }}</td>
+            <td>{{ path.platform_id }}</td>
+            <td>{{ path.title }}</td>
+            <td>{{ path.progression }}</td>
+            <td>{{ path.score }}</td>
+            <td>{{ path.created_time }}</td>
+            <td>{{ path.updated_time }}</td>
+        </tr>
+    {% endfor %}
+</table>
