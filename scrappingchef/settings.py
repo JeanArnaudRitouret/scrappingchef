@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-o($$m@kvn*4efe5!oiimd8svyx90cf&i_7j1qqwjtd1oe!w@qp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'scrappingchef.ew.r.appspot.com',
+    'localhost',
+    '127.0.0.1',
+]
 
 
 # Application definition
@@ -34,6 +38,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'bs4',
     'platform_old.apps.PlatformOldConfig',
+    'platform_new.apps.PlatformNewConfig',
     'rest_framework',
     'corsheaders',
     'django.contrib.admin',
@@ -64,7 +69,9 @@ ROOT_URLCONF = 'scrappingchef.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'platform_new/templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,16 +89,44 @@ WSGI_APPLICATION = 'scrappingchef.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+# Use environment variable to determine if we're running on GCP
+IS_GAE = os.getenv('GAE_APPLICATION', False)
+IS_MIGRATION = os.getenv('DB_MIGRATION', False)
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'TEST': {
-            'NAME': BASE_DIR / 'test_db.sqlite3',
+if IS_GAE:
+    # Production database (Cloud SQL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
         }
     }
-}
+elif IS_MIGRATION:
+    # Temporary PostgreSQL configuration for data migration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME_MIGRATION'),
+            'USER': os.getenv('DB_USER_MIGRATION'),
+            'PASSWORD': os.getenv('DB_PASSWORD_MIGRATION'),
+            'HOST': '127.0.0.1',
+            'PORT': '5433',
+        }
+    }
+else:
+    # Local development database (SQLite)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            'TEST': {
+                'NAME': BASE_DIR / 'test_db.sqlite3',
+            }
+        }
+    }
 
 
 # Password validation
@@ -128,7 +163,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # This creates a 'staticfiles' directory in your project root
+
+# If you have any additional static file directories, add them here
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
