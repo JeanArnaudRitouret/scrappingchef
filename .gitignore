@@ -9,11 +9,11 @@ contents/*
 contents/
 platform_old/platform_old/[0-9]*/
 
-
 # Ignore virtual environment
 .envrc
 .env
 venv/
+.venv/
 .vscode/
 .idea/
 
@@ -46,3 +46,8 @@ kokkeverkstedet/logo512.png
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+app.secrets.yaml
+
+staticfiles/
+*.pyc
