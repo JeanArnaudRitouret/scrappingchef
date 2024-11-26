@@ -1,0 +1,24 @@
+runtime: python311
+service: default
+
+env_variables:
+  DJANGO_SETTINGS_MODULE: "scrappingchef.settings"
+  PYTHONUNBUFFERED: "TRUE"
+  DEBUG: "False"
+  PATH_DOWNLOADED_CONTENTS: ""
+  PATH_VIDEO_DOWNLOADER: ""
+  DB_HOST: "/cloudsql/scrappingchef:europe-north1:scrappingchef"
+
+includes:
+  - app.secrets.yaml
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 0
+  max_instances: 1
+
+handlers:
+  - url: /static
+    static_dir: staticfiles
+  - url: /.*
+    script: auto
