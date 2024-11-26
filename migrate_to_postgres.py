@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
@@ -9,11 +10,10 @@ from dotenv import load_dotenv
 def init_django_settings():
     """Initialize Django with migration settings"""
     load_dotenv()
-    os.environ['DB_MIGRATION'] = 'true'
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'scrappingchef.settings')
     django.setup()
     from scrappingchef.settings import DATABASES
-    return DATABASES['default']
+    return DATABASES
 
 
 def run_command(command, error_message, ignore_errors=False, env=None, stdout=None):
@@ -108,36 +108,74 @@ def wait_for_postgres(max_attempts=30, retry_interval=2, password=None, host='12
             print(f"Waiting for PostgreSQL... ({attempts}/{max_attempts})")
             time.sleep(retry_interval)
 
+def validate_database_settings(settings):
+    """Validate that all required database settings are present.
+
+    Args:
+        settings (dict): Dictionary of database settings
+
+    Returns:
+        bool: True if all settings are valid, False otherwise
+    """
+    required_vars = {
+        'DB_NAME': settings['NAME'],
+        'DB_USER': settings['USER'],
+        'DB_PASSWORD': settings['PASSWORD'],
+        'DB_HOST': settings['HOST'],
+        'DB_PORT': settings['PORT']
+    }
+
+    missing_vars = [var for var, val in required_vars.items() if not val]
+    if missing_vars:
+        print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
+        return False
+    return True
+
+def start_cloud_sql_proxy(port, instance_connection_name):
+    """Start Cloud SQL Proxy and return the process.
+
+    Args:
+        port (str): Port number for the proxy
+        instance_connection_name (str): Full instance connection name (project:region:instance)
+
+    Returns:
+        subprocess.Popen: Running proxy process or None if startup failed
+    """
+    proxy_command = f"cloud-sql-proxy --port {port} {instance_connection_name}"
+    proxy_process = subprocess.Popen(proxy_command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Give proxy time to start
+    time.sleep(2)
+
+    if proxy_process.poll() is not None:
+        _, stderr = proxy_process.communicate()
+        print(f"Failed to start Cloud SQL Proxy: {stderr.decode()}")
+        return None
+
+    return proxy_process
+
 def main():
     # Initialize Django and get database settings
     db_settings = init_django_settings()
 
-    # Get database settings
-    db_name = db_settings['NAME']
-    db_user = db_settings['USER']
-    db_password = db_settings['PASSWORD']
-    db_host = db_settings['HOST']
-    db_port = db_settings.get('PORT')
-
-    # Validate required environment variables
-    required_vars = {'DB_NAME': db_name, 'DB_USER': db_user, 'DB_PASSWORD': db_password, 'DB_HOST': db_host, 'DB_PORT': db_port}
-    missing_vars = [var for var, val in required_vars.items() if not val]
-    if missing_vars:
-        print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
+    if not validate_database_settings(settings=db_settings['migration']):
         return
 
-    # Start Cloud SQL Proxy with proper error handling
+    # Get database settings
+    db_migration_name = db_settings['migration']['NAME']
+    db_migration_user = db_settings['migration']['USER']
+    db_migration_password = db_settings['migration']['PASSWORD']
+    db_migration_host = db_settings['migration']['HOST']
+    db_migration_port = db_settings['migration'].get('PORT')
+
     proxy_process = None
     try:
-        proxy_command = f"cloud-sql-proxy --port {db_port} scrappingchef:europe-north1:scrappingchef"
-        proxy_process = subprocess.Popen(proxy_command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Give proxy time to start
-        time.sleep(2)
-
-        if proxy_process.poll() is not None:
-            _, stderr = proxy_process.communicate()
-            print(f"Failed to start Cloud SQL Proxy: {stderr.decode()}")
+        # Start Cloud SQL Proxy
+        proxy_process = start_cloud_sql_proxy(
+            port=db_migration_port,
+            instance_connection_name="scrappingchef:europe-north1:scrappingchef"
+        )
+        if not proxy_process:
             return
 
         # Wait for PostgreSQL with timeout
@@ -145,10 +183,10 @@ def main():
         if not wait_for_postgres(
             max_attempts=30,
             retry_interval=2,
-            password=db_password,
-            host=db_host,
-            port=db_port,
-            user=db_user
+            password=db_migration_password,
+            host=db_migration_host,
+            port=db_migration_port,
+            user=db_migration_user
         ):
             print("Could not establish PostgreSQL connection")
             return
@@ -156,15 +194,15 @@ def main():
         # Create database if it doesn't exist
         create_db_command = [
             'psql',
-            '-h', str(db_host),
-            '-p', str(db_port),
-            '-U', str(db_user),
-            '-c', f'CREATE DATABASE {str(db_name)};'
+            '-h', str(db_migration_host),
+            '-p', str(db_migration_port),
+            '-U', str(db_migration_user),
+            '-c', f'CREATE DATABASE {str(db_migration_name)};'
         ]
         env = os.environ.copy()
-        env['PGPASSWORD'] = db_password
+        env['PGPASSWORD'] = db_migration_password
 
-        print(f"Checking/creating database '{db_name}'...")
+        print(f"Checking/creating database '{db_migration_name}'...")
         db_created = run_command(create_db_command, "Database already exists", ignore_errors=True, env=env)
         if not db_created:
             print("Database already exists - continuing with migration")
@@ -174,17 +212,16 @@ def main():
         # Add a small delay to ensure connection is stable
         time.sleep(2)
 
-        # Create export file
+        # Create export file from local sqlite3 database
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         export_file = f"data_export_{timestamp}.json"
+
         print(f"Creating export data file at {export_file}...")
         with open(export_file, 'w') as f:
             dump_command = [
                 'python', 'manage.py', 'dumpdata',
-                '--exclude', 'auth.permission',
                 '--exclude', 'contenttypes',
-                '--exclude', 'admin.logentry',
-                '--exclude', 'sessions.session',
+                '--exclude', 'auth.permission',
                 '--indent', '2'
             ]
             if not run_command(dump_command, "Failed to create export file", stdout=f):
@@ -194,12 +231,12 @@ def main():
 
         # Apply migrations with proper error handling
         print("Applying migrations to PostgreSQL...")
-        if not run_command("python manage.py migrate --noinput", "Failed to apply migrations"):
+        if not run_command("python manage.py migrate --noinput --database migration", "Failed to apply migrations"):
             return
 
         # Load data with progress indication
         print("Loading data into PostgreSQL...")
-        if not run_command(f"python manage.py loaddata {export_file}", "Failed to load data"):
+        if not run_command(f"python manage.py loaddata {export_file} --database migration", "Failed to load data"):
             return
 
         print("Migration completed successfully!")
