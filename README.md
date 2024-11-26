@@ -22,8 +22,8 @@ This app is dedicated to scrapping a new cooking platform.
 ### How to deploy the platform_new app into Google App Engine?
 - run `make deploy`
 
-### How to delete previous versions of the app?
-- run 
+### How to delete previous deployed versions of the app which have no traffic split anymore?
+- run `make delete-old-deployed-versions`
 
 ### Which urls are available?
 Read-only urls are available on the cloud app:

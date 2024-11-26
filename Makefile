@@ -18,3 +18,6 @@ migrate_to_postgres:
 
 deploy:
 	gcloud app deploy
+
+delete-old-deployed-versions:
+	gcloud app versions list --filter="TRAFFIC_SPLIT=0.00" --format="table(version.id)" | tail -n +2 | xargs -r gcloud app versions delete --quiet
