@@ -3,8 +3,9 @@ from venv import logger
 from dotenv import load_dotenv
 from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
-from platform_new.models import Path, Training
+from platform_new.models import Path, Training, Step
 from platform_new.scrapper.path_training_scrapping import get_scrapped_path_and_training_objects
+from platform_new.scrapper.step_scrapping import get_scrapped_step_objects_for_training_module
 from platform_new.scrapper.scrapper import SeleniumScrapper
 from platform_new.decorators import local_environment_required
 from scrappingchef.utils import _bulk_create_or_update
@@ -13,9 +14,47 @@ load_dotenv()
 def index(request):
     return render(request, 'index.html')
 
+@local_environment_required
+def scrap_all_steps(request: HttpRequest) -> HttpResponse:
+    try:
+        scrapper = SeleniumScrapper()
+
+        training_ids = Training.objects.values_list('id', flat=True)
+        if not training_ids:
+            return JsonResponse({"error": "No trainings found in database"}, status=404)
+
+        scrapped_steps_objects = []
+        for training_id in training_ids:
+            steps = get_scrapped_step_objects_for_training_module(scrapper=scrapper, training_id=training_id)
+            scrapped_steps_objects.extend(steps)
+
+        if not scrapped_steps_objects:
+            return JsonResponse({"error": "Failed to scrape any steps"}, status=503)
+
+        _bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)
+
+        context = {"steps": scrapped_steps_objects}
+        return render(request, "platform_new/steps.html", context)
+
+    except Exception as e:
+        logger.error(f"Unexpected error in scrap_steps: {str(e)}")
+        return JsonResponse({"error": "Scraping service temporarily unavailable"}, status=503)
+
+
+def scrap_steps_for_training(request: HttpRequest, training_id: int) -> HttpResponse:
+    try:
+        scrapper = SeleniumScrapper()
+        scrapped_steps_objects = get_scrapped_step_objects_for_training_module(scrapper=scrapper, training_id=training_id)
+        _bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)
+        context = {"steps": scrapped_steps_objects}
+        return render(request, "platform_new/steps.html", context)
+    except Exception as e:
+        return JsonResponse({"error": "Scraping service temporarily unavailable"}, status=503)
+
+
 
 @local_environment_required
-def scrap_paths_and_trainings(
+def scrap_all_paths_and_trainings(
     request: HttpRequest
 ) -> HttpResponse:
     """
@@ -130,6 +169,28 @@ def list_scrapped_trainings(
         # Log the error
         logger.error(f"Error retrieving trainings: {str(e)}")
         return JsonResponse({
-            "status": "error", 
+            "status": "error",
             "message": "An error occurred while retrieving trainings"
         }, status=500)
+
+
+def list_scrapped_steps(request: HttpRequest) -> HttpResponse:
+    try:
+        steps = Step.objects.all().values(
+            'id',
+            'platform_id',
+            'title',
+            'training__id',
+            'type',
+            'is_validated',
+            'is_blocked',
+            'created_time',
+            'updated_time',
+        )
+
+        context = {"steps": steps}
+        return render(request, "platform_new/steps.html", context)
+
+    except Exception as e:
+        logger.error(f"Error retrieving steps: {str(e)}")
+        return JsonResponse({"status": "error", "message": "An error occurred while retrieving steps"}, status=500)

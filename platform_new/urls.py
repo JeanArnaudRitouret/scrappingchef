@@ -9,9 +9,12 @@ from . import views
 app_name = "adc_new"
 urlpatterns = [
     path('', index, name='index'),
-    path("scrap_paths_and_trainings/", views.scrap_paths_and_trainings, name="scrap_paths_and_trainings"),
+    path("scrap_all_paths_and_trainings/", views.scrap_all_paths_and_trainings, name="scrap_all_paths_and_trainings"),
+    path("scrap_steps_for_training/<int:training_id>/", views.scrap_steps_for_training, name="scrap_steps_for_training"),
+    path("scrap_all_steps/", views.scrap_all_steps, name="scrap_all_steps"),
     path("list_scrapped_paths/", views.list_scrapped_paths, name="list_scrapped_paths"),
-    path("list_scrapped_trainings/", views.list_scrapped_trainings, name="list_scrapped_trainings")
+    path("list_scrapped_trainings/", views.list_scrapped_trainings, name="list_scrapped_trainings"),
+    path("list_scrapped_steps/", views.list_scrapped_steps, name="list_scrapped_steps"),
 ]
 
 

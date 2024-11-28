@@ -18,6 +18,7 @@ class Path(BaseModel):
     def __str__(self):
         return self.title
 
+
 class Training(BaseModel):
     platform_id = models.IntegerField(null=False, blank=False)
     path = models.ForeignKey(Path, on_delete=models.CASCADE, null=False, blank=False)
@@ -28,3 +29,11 @@ class Training(BaseModel):
     def __str__(self):
         return self.title
 
+
+class Step(BaseModel):
+    platform_id = models.IntegerField(null=False, blank=False)
+    training = models.ForeignKey(Training, on_delete=models.CASCADE, null=False, blank=False)
+    title = models.CharField(max_length=500, null=False, blank=False)
+    type = models.CharField(max_length=500, null=False, blank=False)
+    is_validated = models.BooleanField(default=False, null=False, blank=False)
+    is_blocked = models.BooleanField(default=False, null=False, blank=False)
