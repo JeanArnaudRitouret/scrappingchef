@@ -91,7 +91,6 @@ WSGI_APPLICATION = 'scrappingchef.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 # Use environment variable to determine if we're running on GCP
 IS_GAE = os.getenv('GAE_APPLICATION', False)
-IS_MIGRATION = os.getenv('DB_MIGRATION', False)
 
 if IS_GAE:
     # Production database (Cloud SQL)
@@ -104,20 +103,8 @@ if IS_GAE:
             'HOST': os.getenv('DB_HOST'),
         }
     }
-elif IS_MIGRATION:
-    # Temporary PostgreSQL configuration for data migration
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME_MIGRATION'),
-            'USER': os.getenv('DB_USER_MIGRATION'),
-            'PASSWORD': os.getenv('DB_PASSWORD_MIGRATION'),
-            'HOST': '127.0.0.1',
-            'PORT': '5433',
-        }
-    }
 else:
-    # Local development database (SQLite)
+    # Local development and migration databases
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -125,6 +112,14 @@ else:
             'TEST': {
                 'NAME': BASE_DIR / 'test_db.sqlite3',
             }
+        },
+        'migration': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME_MIGRATION'),
+            'USER': os.getenv('DB_USER_MIGRATION'),
+            'PASSWORD': os.getenv('DB_PASSWORD_MIGRATION'),
+            'HOST': '127.0.0.1',
+            'PORT': '5433',
         }
     }
 
