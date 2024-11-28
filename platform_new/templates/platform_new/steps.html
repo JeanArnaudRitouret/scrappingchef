@@ -1,0 +1,26 @@
+<table >
+    <tr>
+        <th>Step Id</th>
+        <th>Platform Step Id</th>
+        <th>Training Id</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Is Validated</th>
+        <th>Is Blocked</th>
+        <th>Created Time</th>
+        <th>Updated Time</th>
+    </tr>
+    {% for step in steps %}
+        <tr>
+            <td>{{ step.id }}</td>
+            <td>{{ step.platform_id }}</td>
+            <td>{{ step.training.id }}</td>
+            <td>{{ step.title }}</td>
+            <td>{{ step.type }}</td>
+            <td>{{ step.is_validated }}</td>
+            <td>{{ step.is_blocked }}</td>
+            <td>{{ step.created_time }}</td>
+            <td>{{ step.updated_time }}</td>
+        </tr>
+    {% endfor %}
+</table>
