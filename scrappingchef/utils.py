@@ -85,17 +85,21 @@ def _bulk_create_or_update(model_class, objects):
         model_class: Django model class (Path or Training)
         objects: List of objects to create/update
     """
-    return model_class.objects.bulk_create(
-        objs=objects,
-        update_conflicts=True,
-        update_fields=[
-            field.__dict__.get('name')
-            for field in model_class._meta.get_fields()
-            if field.__dict__.get('primary_key') is False
-        ],
-        unique_fields=[
-            field.__dict__.get('name')
-            for field in model_class._meta.get_fields()
-            if field.__dict__.get('primary_key')
-        ]
-    )
+    try:
+        return model_class.objects.bulk_create(
+            objs=objects,
+            update_conflicts=True,
+            update_fields=[
+                field.__dict__.get('name')
+                for field in model_class._meta.get_fields()
+                if field.__dict__.get('primary_key') is False
+            ],
+            unique_fields=[
+                field.__dict__.get('name')
+                for field in model_class._meta.get_fields()
+                if field.__dict__.get('primary_key')
+            ]
+        )
+    except Exception as e:
+        print(f"Error during bulk create/update for {model_class.__name__}: {str(e)}")
+        return None
