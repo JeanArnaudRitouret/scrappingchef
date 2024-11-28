@@ -46,7 +46,7 @@ def get_scrapped_path_and_training_objects(scrapper: SeleniumScrapper) -> tuple[
     """
     try:
         # Navigate to training paths page
-        scrapper.driver.get(os.environ['URL_NEW_PLATFORM_TRAINING'])
+        scrapper.driver.get(os.environ['URL_NEW_PLATFORM_TRAINING_PATHS'])
 
         num_pages = get_number_of_pages_for_paths(scrapper=scrapper)
 
