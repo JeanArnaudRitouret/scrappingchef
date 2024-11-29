@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import index
+from .views import index, PathsHierarchyView
 from django.conf import settings
 from django.conf.urls.static import static
 import os
@@ -15,6 +15,7 @@ urlpatterns = [
     path("list_scrapped_paths/", views.list_scrapped_paths, name="list_scrapped_paths"),
     path("list_scrapped_trainings/", views.list_scrapped_trainings, name="list_scrapped_trainings"),
     path("list_scrapped_steps/", views.list_scrapped_steps, name="list_scrapped_steps"),
+    path('api/paths-hierarchy/', PathsHierarchyView.as_view(), name='paths-hierarchy'),
 ]
 
 

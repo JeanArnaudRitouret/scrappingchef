@@ -9,6 +9,9 @@ from platform_new.scrapper.step_scrapping import get_scrapped_step_objects_for_t
 from platform_new.scrapper.scrapper import SeleniumScrapper
 from platform_new.decorators import local_environment_required
 from scrappingchef.utils import _bulk_create_or_update
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from platform_new.serializers import PathSerializer
 load_dotenv()
 
 def index(request):
@@ -194,3 +197,13 @@ def list_scrapped_steps(request: HttpRequest) -> HttpResponse:
     except Exception as e:
         logger.error(f"Error retrieving steps: {str(e)}")
         return JsonResponse({"status": "error", "message": "An error occurred while retrieving steps"}, status=500)
+
+
+class PathsHierarchyView(APIView):
+    def get(self, request):
+        paths = Path.objects.prefetch_related(
+            'trainings',
+            'trainings__steps'
+        ).all()
+        serializer = PathSerializer(paths, many=True)
+        return Response({'paths': serializer.data})
