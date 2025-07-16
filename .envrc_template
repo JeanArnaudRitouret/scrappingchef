@@ -1,0 +1,31 @@
+# ADC
+export URL_ADC=""
+export URL_LOGIN_ADC=""
+export URL_ADC_COURSE=""
+export USERNAME_ADC=""
+export PASSWORD_ADC=""
+export PATH_DOWNLOADED_CONTENTS=""
+
+# NEW_PLATFORM
+export URL_NEW_PLATFORM=""
+export URL_LOGIN_NEW_PLATFORM=""
+export URL_NEW_PLATFORM_TRAINING=""
+export URL_NEW_PLATFORM_TRAINING_PATHS=""
+
+# OTHER
+export PATH_VIDEO_DOWNLOADER=""
+
+# MIGRATION
+export MIGRATIONDB_NAME_MIGRATION=""
+export DB_USER_MIGRATION=""
+export DB_PASSWORD_MIGRATION=""
+
+# GCP
+export GCP_PROJECT_ID=""
+export CLOUDSDK_ACTIVE_CONFIG_NAME=""
+export GCSBUCKET_NAME=""
+
+# TERRAFORM
+export TF_VAR_project_id=""
+export TF_VAR_region=""
+export TF_VAR_zone=""
