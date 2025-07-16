@@ -1,0 +1,30 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+.env
+.envrc
+.venv
+env/
+migrate_to_postgres.py
+
+# Data
+db.json
+data.json
+db.sqlite3
+
+
+# Docker
+Dockerfile
+
+# Google Cloud
+.gcloudignore
+
+# Git
+.gitignore
+
+page_source.html
+test.html
+
+Python Challenges.ipynb
+SQL Challenges.ipynb
+
+/tmp/
+ipynb_checkpoints/

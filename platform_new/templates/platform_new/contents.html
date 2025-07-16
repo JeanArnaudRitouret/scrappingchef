@@ -1,0 +1,22 @@
+<table>
+    <tr>
+        <th>Content Id</th>
+        <th>Step Id</th>
+        <th>Step Title</th>
+        <th>Filename</th>
+        <th>Type</th>
+        <th>Created Time</th>
+        <th>Updated Time</th>
+    </tr>
+    {% for content in contents %}
+        <tr>
+            <td>{{ content.id }}</td>
+            <td>{{ content.step.id }}</td>
+            <td>{{ content.step.title }}</td>
+            <td>{{ content.filename }}</td>
+            <td>{{ content.type }}</td>
+            <td>{{ content.created_time }}</td>
+            <td>{{ content.updated_time }}</td>
+        </tr>
+    {% endfor %}
+</table>

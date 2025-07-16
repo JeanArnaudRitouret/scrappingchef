@@ -26,6 +26,7 @@ class Training(BaseModel):
     progression = models.FloatField(default=0.0, null=False)
     score = models.FloatField(null=True, default=None)
     type = models.CharField(max_length=500, null=False, blank=False)
+
     def __str__(self):
         return self.title
 
@@ -37,3 +38,15 @@ class Step(BaseModel):
     type = models.CharField(max_length=500, null=False, blank=False)
     is_validated = models.BooleanField(default=False, null=False, blank=False)
     is_blocked = models.BooleanField(default=False, null=False, blank=False)
+
+    def __str__(self):
+        return self.title
+
+
+class Content(BaseModel):
+    step = models.ForeignKey(Step, related_name='contents', on_delete=models.CASCADE, null=False, blank=False)
+    filename = models.CharField(max_length=500, null=False, blank=False)
+    type = models.CharField(max_length=500, null=False, blank=False)
+
+    def __str__(self):
+        return self.title

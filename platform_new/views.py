@@ -1,9 +1,10 @@
 import os
 from venv import logger
 from dotenv import load_dotenv
-from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden, FileResponse
 from django.shortcuts import render
-from platform_new.models import Path, Training, Step
+from platform_new.models.models import Content, Path, Training, Step
+from platform_new.scrapper.content_scrapping import get_scrapped_content_objects_for_training_module
 from platform_new.scrapper.path_training_scrapping import get_scrapped_path_and_training_objects
 from platform_new.scrapper.step_scrapping import get_scrapped_step_objects_for_training_module
 from platform_new.scrapper.scrapper import SeleniumScrapper
@@ -12,10 +13,23 @@ from scrappingchef.utils import _bulk_create_or_update
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from platform_new.serializers import PathSerializer
+from django.conf import settings
+import mimetypes
 load_dotenv()
 
 def index(request):
     return render(request, 'index.html')
+
+def scrap_contents_for_training(request: HttpRequest, training_id: int) -> list[Content]:
+    try:
+        scrapper = SeleniumScrapper(extension_vimeo_video_downloader=True)
+        contents = get_scrapped_content_objects_for_training_module(scrapper=scrapper, training_id=training_id)
+        _bulk_create_or_update(model_class=Content, objects=contents)
+        context = {"contents": contents}
+        return render(request, "platform_new/contents.html", context)
+    except Exception as e:
+        return JsonResponse({"error": "Scraping service temporarily unavailable"}, status=503)
+
 
 @local_environment_required
 def scrap_all_steps(request: HttpRequest) -> HttpResponse:
@@ -199,11 +213,58 @@ def list_scrapped_steps(request: HttpRequest) -> HttpResponse:
         return JsonResponse({"status": "error", "message": "An error occurred while retrieving steps"}, status=500)
 
 
+def list_scrapped_contents(request: HttpRequest) -> HttpResponse:
+    try:
+        contents = Content.objects.all().values(
+            'id',
+            'step__id',
+            'step__title',
+            'filename',
+            'type',
+            'created_time',
+            'updated_time'
+        )
+
+        context = {"contents": contents}
+        return render(request, "platform_new/contents.html", context)
+    except Exception as e:
+        logger.error(f"Error retrieving contents: {str(e)}")
+        return JsonResponse({"status": "error", "message": "An error occurred while retrieving contents"}, status=500)
+
 class PathsHierarchyView(APIView):
     def get(self, request):
         paths = Path.objects.prefetch_related(
             'trainings',
-            'trainings__steps'
+            'trainings__steps',
+            'trainings__steps__contents'
         ).all()
         serializer = PathSerializer(paths, many=True)
         return Response({'paths': serializer.data})
+
+
+class ContentFileView(APIView):
+    def get(self, request, filename: str) -> FileResponse:
+        # Define the directory containing the content files
+        content_directory = os.path.join(settings.BASE_DIR, 'platform_new', 'contents')
+
+        # Construct the full file path
+        file_path = os.path.join(content_directory, filename)
+
+        # Check if the file exists
+        if os.path.isfile(file_path):
+            # Determine the content type based on the file extension
+            content_type, _ = mimetypes.guess_type(file_path)
+
+            # Set Content-Disposition based on the file type
+            if content_type == 'application/pdf':
+                disposition = 'inline'
+            elif content_type and content_type.startswith('video/'):
+                disposition = 'inline'  # Display video inline
+            else:
+                disposition = 'attachment'  # Default to attachment for other types
+
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+            return response
+        else:
+            return JsonResponse({"error": "File not found"}, status=404)

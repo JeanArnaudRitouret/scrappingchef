@@ -16,8 +16,8 @@ This app is dedicated to scrapping a new cooking platform.
 
 ### How to migrate the local database into the cloud sql instance?
 - the sqlite database is created locally by scrapping the platform and should then be uploaded to the cloud sql instance.
-- in order to migrate, run `make migrate_to_postgres`
-- the script will create an export file of the local database called `data_export_<timestamp>.json`, upload it to the cloud sql instance and load it.
+- in order to migrate the data already included in the local database, run `make database_migration`
+- the script will create an export file of the local database, load the data into the cloud postgresql instance and delete the export.
 
 ### How to deploy the platform_new app into Google App Engine?
 - run `make deploy`

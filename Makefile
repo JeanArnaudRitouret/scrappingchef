@@ -1,3 +1,5 @@
+PROJECT_ID=scrappingchef
+
 .PHONY: run
 
 run:
@@ -11,11 +13,20 @@ migrate:
 shell:
 	python manage.py shell
 
-migrate_to_postgres:
-	python migrate_to_postgres.py
+database_migration:
+	python -m database_migration
+
+move_contents:
+	python -m move_contents_to_gcs
 
 deploy:
-	gcloud app deploy
+	gcloud app deploy --project $(PROJECT_ID)
 
 delete-old-deployed-versions:
-	gcloud app versions list --filter="TRAFFIC_SPLIT=0.00" --format="table(version.id)" | tail -n +2 | xargs -r gcloud app versions delete --quiet
+	gcloud app versions list --project $(PROJECT_ID) --filter="TRAFFIC_SPLIT=0.00" --format="table(version.id)" | tail -n +2 | xargs -r gcloud app versions delete --project $(PROJECT_ID) --quiet
+
+shebang:
+	make database_migration
+	make move_contents
+	make deploy
+	make delete-old-deployed-versions

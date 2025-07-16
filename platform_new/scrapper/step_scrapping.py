@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from platform_new.scrapper.scrapper import SeleniumScrapper
-from platform_new.models import Step, Training
+from platform_new.models.models import Step, Training
 
 # CSS selectors used for step scraping
 SELECTORS = {
@@ -35,7 +35,7 @@ def get_scrapped_step_objects_for_training_module(scrapper: SeleniumScrapper, tr
     if not navigate_to_training_page(scrapper, training_id):
         return []
     try:
-        # Find all training module items
+        # Find all step module items
         module_items = scrapper.driver.find_elements(By.CSS_SELECTOR, SELECTORS['module_item'])
 
         # Process each module item to create a step object

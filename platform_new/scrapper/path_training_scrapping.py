@@ -3,7 +3,7 @@ import os
 import time
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
-from platform_new.models import Path, Training
+from platform_new.models.models import Path, Training
 from selenium.webdriver.remote.webelement import WebElement
 from platform_new.scrapper.scrapper import SeleniumScrapper
 from selenium.webdriver.support.ui import WebDriverWait
@@ -48,6 +48,7 @@ def get_scrapped_path_and_training_objects(scrapper: SeleniumScrapper) -> tuple[
         # Navigate to training paths page
         scrapper.driver.get(os.environ['URL_NEW_PLATFORM_TRAINING_PATHS'])
 
+        breakpoint()
         num_pages = get_number_of_pages_for_paths(scrapper=scrapper)
 
         scrapped_path_objects: list[Path] = []
