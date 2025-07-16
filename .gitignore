@@ -51,3 +51,23 @@ app.secrets.yaml
 
 staticfiles/
 *.pyc
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!example.tfvars
+!*.tfvars.example
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+*.tfplan
+*.tfplan.*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
