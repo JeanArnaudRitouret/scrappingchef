@@ -1,10 +1,13 @@
-import logging
 import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from platform_new.scrapper.scrapper import SeleniumScrapper
 from platform_new.models.models import Step, Training
+from .logger import get_logger
+
+# Create logger for this module
+logger = get_logger(__name__)
 
 # CSS selectors used for step scraping
 SELECTORS = {
@@ -12,7 +15,7 @@ SELECTORS = {
     'title': '.training-view-module-item-title', 
     'state': '.training-view-module-item-state .state-box',
     'icon': '.item-icon-picto i'
-}
+} 
 
 
 def get_scrapped_step_objects_for_training_module(scrapper: SeleniumScrapper, training_id: int) -> list[Step]:
@@ -44,7 +47,7 @@ def get_scrapped_step_objects_for_training_module(scrapper: SeleniumScrapper, tr
         return steps
 
     except Exception as e:
-        logging.error(f"Error scraping steps: {str(e)}")
+        logger.error(f"Error scraping steps: {str(e)}")
         return []
 
 
@@ -70,7 +73,7 @@ def navigate_to_training_page(scrapper: SeleniumScrapper, training_id: int) -> b
         return True
 
     except Exception as e:
-        logging.error(f"Failed to navigate to training page {training_id}: {str(e)}")
+        logger.error(f"Failed to navigate to training page {training_id}: {str(e)}")
         return False
 
 
@@ -81,7 +84,7 @@ def process_module_items(module_items, training_id):
             step = create_step_object(item, training_id, index)
             steps.append(step)
         except Exception as e:
-            logging.error(f"Failed to process step item: {e}")
+            logger.error(f"Failed to process step item: {e}")
             continue
     return steps
 

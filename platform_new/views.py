@@ -9,7 +9,7 @@ from platform_new.scrapper.path_training_scrapping import get_scrapped_path_and_
 from platform_new.scrapper.step_scrapping import get_scrapped_step_objects_for_training_module
 from platform_new.scrapper.scrapper import SeleniumScrapper
 from platform_new.decorators import local_environment_required
-from scrappingchef.utils import _bulk_create_or_update
+from scrappingchef.utils import bulk_create_or_update
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from platform_new.serializers import PathSerializer
@@ -24,8 +24,8 @@ def scrap_contents_for_training(request: HttpRequest, training_id: int) -> list[
     try:
         scrapper = SeleniumScrapper(extension_vimeo_video_downloader=True)
         contents = get_scrapped_content_objects_for_training_module(scrapper=scrapper, training_id=training_id)
-        _bulk_create_or_update(model_class=Content, objects=contents)
-        context = {"contents": contents}
+        content_objects_inserted = bulk_create_or_update(model_class=Content, objects=contents)
+        context = {"contents": content_objects_inserted}
         return render(request, "platform_new/contents.html", context)
     except Exception as e:
         return JsonResponse({"error": "Scraping service temporarily unavailable"}, status=503)
@@ -36,7 +36,7 @@ def scrap_all_steps(request: HttpRequest) -> HttpResponse:
     try:
         scrapper = SeleniumScrapper()
 
-        training_ids = Training.objects.values_list('id', flat=True)
+        training_ids = Training.objects.values_list('id', flat=True)  # type: ignore
         if not training_ids:
             return JsonResponse({"error": "No trainings found in database"}, status=404)
 
@@ -48,7 +48,7 @@ def scrap_all_steps(request: HttpRequest) -> HttpResponse:
         if not scrapped_steps_objects:
             return JsonResponse({"error": "Failed to scrape any steps"}, status=503)
 
-        _bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)
+        step_objects_inserted = bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)
 
         context = {"steps": scrapped_steps_objects}
         return render(request, "platform_new/steps.html", context)
@@ -62,8 +62,8 @@ def scrap_steps_for_training(request: HttpRequest, training_id: int) -> HttpResp
     try:
         scrapper = SeleniumScrapper()
         scrapped_steps_objects = get_scrapped_step_objects_for_training_module(scrapper=scrapper, training_id=training_id)
-        _bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)
-        context = {"steps": scrapped_steps_objects}
+        step_objects_inserted = bulk_create_or_update(model_class=Step, objects=scrapped_steps_objects)  # type: ignore
+        context = {"steps": step_objects_inserted}
         return render(request, "platform_new/steps.html", context)
     except Exception as e:
         return JsonResponse({"error": "Scraping service temporarily unavailable"}, status=503)
@@ -85,25 +85,24 @@ def scrap_all_paths_and_trainings(
         HttpResponse: object with a rendered text which is a combination of a template with a context dictionary
     """
     try:
-        # Initialize the scrapper
-        scrapper = SeleniumScrapper()
+        # Use context manager to ensure scrapper is always closed
+        with SeleniumScrapper() as scrapper:
+            # Get the path objects scrapped from the platform
+            scrapped_path_objects, scrapped_training_objects = get_scrapped_path_and_training_objects(scrapper=scrapper)
 
-        # Get the path objects scrapped from the platform
-        scrapped_path_objects, scrapped_training_objects = get_scrapped_path_and_training_objects(scrapper=scrapper)
+            # Create or update the path objects in the database
+            path_objects_inserted = bulk_create_or_update(model_class=Path, objects=scrapped_path_objects)
 
-        # Create or update the path objects in the database
-        _bulk_create_or_update(model_class=Path, objects=scrapped_path_objects)
+            # Create or update the training objects in the database
+            training_objects_inserted = bulk_create_or_update(model_class=Training, objects=scrapped_training_objects)
 
-        # Create or update the training objects in the database
-        _bulk_create_or_update(model_class=Training, objects=scrapped_training_objects)
-
-        # Render both paths and trainings tables in the same template
-        context = {
-            "paths": scrapped_path_objects,
-            "trainings": scrapped_training_objects
-        }
-        # Use paths_and_trainings.html template which will be followed by trainings.html template
-        return render(request, "platform_new/paths_and_trainings.html", context)
+            # Render both paths and trainings tables in the same template
+            context = {
+                "paths": path_objects_inserted,
+                "trainings": training_objects_inserted
+            }
+            # Use paths_and_trainings.html template which will be followed by trainings.html template
+            return render(request, "platform_new/paths_and_trainings.html", context)
 
     except Exception as e:
         # Log the error and return a friendly response
@@ -128,7 +127,7 @@ def list_scrapped_paths(
     """
     try:
         # Get all paths and serialize them
-        paths = Path.objects.all().values(
+        paths = Path.objects.all().values(  # type: ignore
             'id',
             'platform_id',
             'title',
@@ -167,7 +166,7 @@ def list_scrapped_trainings(
     """
     try:
         # Get all trainings and serialize them
-        trainings = Training.objects.all().values(
+        trainings = Training.objects.all().values(  # type: ignore
             'id',
             'platform_id',
             'path__title',
@@ -193,7 +192,7 @@ def list_scrapped_trainings(
 
 def list_scrapped_steps(request: HttpRequest) -> HttpResponse:
     try:
-        steps = Step.objects.all().values(
+        steps = Step.objects.all().values(  # type: ignore
             'id',
             'platform_id',
             'title',
@@ -215,7 +214,7 @@ def list_scrapped_steps(request: HttpRequest) -> HttpResponse:
 
 def list_scrapped_contents(request: HttpRequest) -> HttpResponse:
     try:
-        contents = Content.objects.all().values(
+        contents = Content.objects.all().values(  # type: ignore
             'id',
             'step__id',
             'step__title',
@@ -233,7 +232,7 @@ def list_scrapped_contents(request: HttpRequest) -> HttpResponse:
 
 class PathsHierarchyView(APIView):
     def get(self, request):
-        paths = Path.objects.prefetch_related(
+        paths = Path.objects.prefetch_related(  # type: ignore
             'trainings',
             'trainings__steps',
             'trainings__steps__contents'

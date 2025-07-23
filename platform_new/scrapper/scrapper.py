@@ -6,11 +6,14 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from dotenv import load_dotenv
 
-from scrappingchef.utils import loop_until_get
+from .logger import get_logger
+
+# Create logger for this module
+logger = get_logger(__name__)
 
 load_dotenv()
 
-class SeleniumScrapper():
+class SeleniumScrapper(): 
 
     driver = None
     cookies = None
@@ -57,6 +60,8 @@ class SeleniumScrapper():
 
     def logging(self):
         # Go to the login page
+        if self.driver is None:
+            raise RuntimeError("Driver is not initialized")
         self.driver.get(os.environ['URL_LOGIN_NEW_PLATFORM'])
 
         # Input the username and password
@@ -73,11 +78,28 @@ class SeleniumScrapper():
 
 
     def get_close_button(self):
+        if self.driver is None:
+            raise RuntimeError("Driver is not initialized")
         return self.driver.find_element(by = 'class name', value = 'eupopup-closebutton')
 
     def get_cookies(self):
+        if self.driver is None:
+            raise RuntimeError("Driver is not initialized")
         for entry in self.driver.get_cookies():
             if entry['name'] == 'MoodleSession':
                 self.cookies = dict({entry['name']:entry['value']})
                 pass
         pass
+
+    def __enter__(self):
+        """Context manager entry point."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit point - ensures driver is closed."""
+        logger = get_logger(__name__)
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception as e:
+                logger.error(f"Error closing scrapper: {str(e)}")

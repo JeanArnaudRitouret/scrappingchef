@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 import requests
@@ -12,6 +11,7 @@ from platform_new.scrapper.scrapper import SeleniumScrapper
 from platform_new.models.models import Content, Step, Training
 from platform_new.scrapper.step_scrapping import get_scrapped_step_objects_for_training_module
 from urllib.parse import unquote, urlparse, parse_qs
+from .logger import get_logger
 
 # TODO: Remove hardcoded urls
 
@@ -22,6 +22,8 @@ SELECTORS = {
     'state': '.training-view-module-item-state .state-box',
     'icon': '.item-icon-picto i'
 }
+
+logger = get_logger(__name__)
 
 
 def get_scrapped_content_objects_for_training_module(scrapper: SeleniumScrapper, training_id: int) -> list[Content]:
@@ -50,8 +52,8 @@ def get_scrapped_content_objects_for_training_module(scrapper: SeleniumScrapper,
         return contents
 
     except Exception as e:
-        logging.error(f"Error scraping steps: {str(e)}")
-        logging.error(f"Stopped at step index {i} (step_id: {steps[i].id})")
+        logger.error(f"Error scraping steps: {str(e)}")
+        logger.error(f"Stopped at step index {i} (step_id: {steps[i].id})")
         return []
 
 
@@ -63,7 +65,7 @@ def process_step_video_content(scrapper: SeleniumScrapper, step: Step) -> Conten
         file_path = prepare_file_path(file_name=file_name)
         download_video_with_ytdlp(video_download_url, file_path)
     except Exception as e:
-        logging.error(f"Error processing video content: {str(e)}")
+        logger.error(f"Error processing video content: {str(e)}")
         download_url = None
 
     # Create a new Content object for the video
@@ -98,7 +100,7 @@ def download_video_with_ytdlp(video_url: str, output_path: str) -> None:
             # Then download
             ydl.download([video_url])
         except yt_dlp.utils.DownloadError as e:
-            logging.error(f"Failed to download video: {str(e)}")
+            logger.error(f"Failed to download video: {str(e)}")
             raise
 
 
@@ -121,10 +123,10 @@ def get_video_download_url(iframe_src: str) -> str:
         video_id = vimeo_url.split('vimeo.com/')[-1]
         return f'https://player.vimeo.com/video/{video_id}'
     except (KeyError, IndexError) as e:
-        logging.error(f"Failed to parse video URL: {str(e)}")
+        logger.error(f"Failed to parse video URL: {str(e)}")
         raise
     except Exception as e:
-        logging.error(f"Unexpected error getting video URL: {str(e)}")
+        logger.error(f"Unexpected error getting video URL: {str(e)}")
         raise
 
 
@@ -154,14 +156,14 @@ def get_iframely_src(driver) -> str:
     return iframe.get_attribute('src')
 
 
-def process_step_document_content(scrapper: SeleniumScrapper, step: Step) -> Content:
+def process_step_document_content(scrapper: SeleniumScrapper, step: Step) -> Content | None:
     content, pdf_url = get_content_and_pdf_url_for_step(scrapper, step)
 
     if not content or not pdf_url:
-        logging.error(f"Failed to get content for step {step.id}: Empty content or HTML")
+        logger.error(f"Failed to get content for step {step.id}: Empty content or HTML")
         return None
 
-    download_pdf(pdf_url, step.id)
+    download_pdf(pdf_url, step.platform_id)
 
     return content
 
@@ -197,18 +199,18 @@ def download_pdf(pdf_url: str, step_id: int) -> None:
         with open(file_path, 'wb') as f:
             f.write(response.content)
     else:
-        logging.error(f"Failed to download PDF for step {step_id}: Status code {response.status_code}")
+        logger.error(f"Failed to download PDF for step {step_id}: Status code {response.status_code}")
 
 
 
 def should_skip_if_exists(file_path: str) -> None:
     if os.path.exists(file_path):
-        logging.info(f"{file_path} already exists, skipping the download/save")
+        logger.info(f"{file_path} already exists, skipping the download/save")
         return
     pass
 
 
-def get_pdf_url(scrapper: SeleniumScrapper) -> str:
+def get_pdf_url(scrapper: SeleniumScrapper) -> str | None:
     """
     Extracts the PDF URL from the iframe on the page.
 
@@ -227,11 +229,11 @@ def get_pdf_url(scrapper: SeleniumScrapper) -> str:
             return pdf_url.split('file=')[1]  # Extract the actual PDF URL
         return None
     except TimeoutException:
-        logging.error("PDF iframe not found on page")
+        logger.error("PDF iframe not found on page")
         return None
 
 
-def process_step_text_content(scrapper: SeleniumScrapper, step: Step) -> Content:
+def process_step_text_content(scrapper: SeleniumScrapper, step: Step) -> Content | None:
     """
     Process and save the text content for a given step.
 
@@ -248,7 +250,7 @@ def process_step_text_content(scrapper: SeleniumScrapper, step: Step) -> Content
     """
     content, html = get_content_and_html_for_step(scrapper, step)
     if not content or not html:
-        logging.error(f"Failed to get content for step {step.id}: Empty content or HTML")
+        logger.error(f"Failed to get content for step {step.id}: Empty content or HTML")
         return None
 
     save_content_to_file(content, html)
@@ -269,7 +271,7 @@ def save_content_to_file(content: Content, html: str) -> None:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(html)
     except Exception as e:
-        logging.error(f"Failed to save content file for step {content.step.id}: {str(e)}")
+        logger.error(f"Failed to save content file for step {content.step.id}: {str(e)}")
 
 
 def navigate_to_step_module(scrapper: SeleniumScrapper, index: int) -> None:
@@ -285,11 +287,13 @@ def navigate_to_step_module(scrapper: SeleniumScrapper, index: int) -> None:
         None
     """
     # Find and click the step module at the given index
+    if scrapper.driver is None:
+        raise RuntimeError("Driver is not initialized")
     step_modules = scrapper.driver.find_elements(By.CSS_SELECTOR, SELECTORS['module_item'])
     step_modules[index].click()
 
 
-def get_content_and_html_for_step(scrapper: SeleniumScrapper, step: Step) -> tuple[Content, str]:
+def get_content_and_html_for_step(scrapper: SeleniumScrapper, step: Step) -> tuple[Content, str] | tuple[None, None]:
     # Find the text content element
     try:
         # Wait up to 10 seconds for the text content element to be present on the page
@@ -298,7 +302,7 @@ def get_content_and_html_for_step(scrapper: SeleniumScrapper, step: Step) -> tup
             EC.presence_of_element_located((By.CSS_SELECTOR, '#textRender'))
         )
     except Exception as e:
-        logging.error(f"Failed to find text content element: {str(e)}")
+        logger.error(f"Failed to find text content element: {str(e)}")
         text_content = None
 
     content = Content(
@@ -313,9 +317,8 @@ def get_content_and_html_for_step(scrapper: SeleniumScrapper, step: Step) -> tup
         html_content = text_content.get_attribute('innerHTML')
         return content, html_content
     except Exception as e:
-        logging.error(f"Failed to save content for step {step.id}: {str(e)}")
+        logger.error(f"Failed to save content for step {step.id}: {str(e)}")
         return None, None
-    return None, None
 
 
 def unblock_all_steps(scrapper: SeleniumScrapper, steps: list[Step]) -> None:
@@ -337,7 +340,7 @@ def unblock_all_steps(scrapper: SeleniumScrapper, steps: list[Step]) -> None:
         for step in steps_to_unblock:
             navigate_to_step_page(scrapper=scrapper, step=step)
     except Exception as e:
-        logging.error(f"Failed to unblock steps: {str(e)}")
+        logger.error(f"Failed to unblock steps: {str(e)}")
         raise
 
 
@@ -355,15 +358,17 @@ def navigate_to_step_page(scrapper: SeleniumScrapper, step: Step) -> None:
     # Navigate to step page
     try:
         step_url = f"https://atelier-des-chefs.riseup.fr/Training/view/{step.training.id}/step/{step.platform_id}"
-        logging.info(f"Navigating to step {step.platform_id} at {step_url}")
+        logger.info(f"Navigating to step {step.platform_id} at {step_url}")
         scrapper.driver.get(step_url)
 
         # Wait for page load
+        if scrapper.driver is None:
+            raise RuntimeError("Driver is not initialized")
         WebDriverWait(scrapper.driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '.training-view-module-item'))
         )
     except Exception as e:
-        logging.error(f"Failed to navigate to step {step.platform_id}: {str(e)}")
+        logger.error(f"Failed to navigate to step {step.platform_id}: {str(e)}")
 
 
 def get_steps_to_unblock(steps: list[Step]) -> list[Step]:
@@ -381,6 +386,7 @@ def get_steps_to_unblock(steps: list[Step]) -> list[Step]:
 
     # Get steps from previous index to end
     return steps[max(0, first_blocked_idx-1):]
+
 
 def prepare_file_path(base_dir: str = 'platform_new/contents', file_name: str = None) -> str:
     """
@@ -401,8 +407,8 @@ def prepare_file_path(base_dir: str = 'platform_new/contents', file_name: str = 
         os.makedirs(base_dir, exist_ok=True)
         file_path = os.path.join(base_dir, file_name)
         if os.path.exists(file_path):
-            logging.info(f"File already exists at {file_path}")
+            logger.info(f"File already exists at {file_path}")
         return file_path
     except OSError as e:
-        logging.error(f"Failed to create directory {base_dir}: {str(e)}")
+        logger.error(f"Failed to create directory {base_dir}: {str(e)}")
         raise
