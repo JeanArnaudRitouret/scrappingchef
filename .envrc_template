@@ -16,9 +16,11 @@ export URL_NEW_PLATFORM_TRAINING_PATHS=""
 export PATH_VIDEO_DOWNLOADER=""
 
 # MIGRATION
-export MIGRATIONDB_NAME_MIGRATION=""
-export DB_USER_MIGRATION=""
-export DB_PASSWORD_MIGRATION=""
+export DB_NAME=""
+export DB_USER=""
+export DB_PASSWORD=""
+export DB_HOST=""
+export DB_PORT=""
 
 # GCP
 export GCP_PROJECT_ID=""
