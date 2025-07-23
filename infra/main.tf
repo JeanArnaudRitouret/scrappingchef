@@ -31,7 +31,8 @@ resource "google_sql_database_instance" "main" {
     
     ip_configuration {
       ipv4_enabled = true
-      authorized_networks {
+      authorized_networks { 
+        # TODO: Replace with the IP of the local machine or the IP of the Cloud SQL Auth Proxy
         name  = "all"
         value = "0.0.0.0/0"
       }
@@ -40,4 +41,48 @@ resource "google_sql_database_instance" "main" {
     disk_size = 10
     disk_type = "PD_SSD"
   }
+}
+
+resource "google_project_service" "secret_manager" {
+  service = "secretmanager.googleapis.com"
+}
+
+resource "google_secret_manager_secret" "DB_HOST" {
+  secret_id = "DB_HOST"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "DB_PORT" {
+  secret_id = "DB_PORT"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "DB_NAME" {
+  secret_id = "DB_NAME"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "DB_USER" {
+  secret_id = "DB_USER"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "DB_PASSWORD" {
+  secret_id = "DB_PASSWORD"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
 }
