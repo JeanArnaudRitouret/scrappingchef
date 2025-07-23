@@ -37,8 +37,8 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'bs4',
-    'platform_old.apps.PlatformOldConfig',
-    'platform_new.apps.PlatformNewConfig',
+    # 'platform_new.apps.PlatformNewConfig',
+    'platform_new',
     'rest_framework',
     'corsheaders',
     'django.contrib.admin',
@@ -92,37 +92,16 @@ WSGI_APPLICATION = 'scrappingchef.wsgi.application'
 # Use environment variable to determine if we're running on GCP
 IS_GAE = os.getenv('GAE_APPLICATION', False)
 
-if IS_GAE:
-    # Production database (Cloud SQL)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
-else:
-    # Local development and migration databases
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-            'TEST': {
-                'NAME': BASE_DIR / 'test_db.sqlite3',
-            }
-        },
-        'migration': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME_MIGRATION'),
-            'USER': os.getenv('DB_USER_MIGRATION'),
-            'PASSWORD': os.getenv('DB_PASSWORD_MIGRATION'),
-            'HOST': '127.0.0.1',
-            'PORT': '5433',
-        }
-    }
-
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -162,9 +141,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # This creates a 'staticfiles' directory in your project root
 
 # If you have any additional static file directories, add them here
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'static'),
+# ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

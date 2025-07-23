@@ -1,7 +1,12 @@
 import os
+from typing import Any
+from platform_new.scrapper.logger import get_logger
+
+# Create logger for this module
+logger = get_logger(__name__)
 
 
-def loop_until_get(get_function, loop_limit, error_if_limit_reached=True, *args, **kwargs) -> any:
+def loop_until_get(get_function, loop_limit, error_if_limit_reached=True, *args, **kwargs) -> Any:
     """
     This function will call another function get_function until it returns a non-None value or the loop_limit is reached. 
     If the loop_limit is reached, it will raise an exception unless error_if_limit_reached is set to False.
@@ -70,6 +75,8 @@ def loop_until_pass(pass_function, loop_limit, error_if_limit_reached=True, *arg
         return False
 
 def check_if_folder_exists(folder_path=None, create_folder=True):
+    if folder_path is None:
+        return False
     if not os.path.exists(folder_path):
         if create_folder:
             os.makedirs(folder_path)
@@ -77,29 +84,28 @@ def check_if_folder_exists(folder_path=None, create_folder=True):
     return True
 
 
-def _bulk_create_or_update(model_class, objects):
+def bulk_create_or_update(model_class, objects):
     """
     Helper function to perform bulk create or update operations.
 
     Args:
-        model_class: Django model class (Path or Training)
+        model_class: Django model class (Path, Training, Step, or Content)
         objects: List of objects to create/update
     """
     try:
-        return model_class.objects.bulk_create(
+        inserted_objects = model_class.objects.bulk_create(
             objs=objects,
             update_conflicts=True,
             update_fields=[
                 field.__dict__.get('name')
                 for field in model_class._meta.get_fields()
-                if field.__dict__.get('primary_key') is False
+                if field.__dict__.get('primary_key') is False and field.__dict__.get('name') != 'platform_id'
             ],
-            unique_fields=[
-                field.__dict__.get('name')
-                for field in model_class._meta.get_fields()
-                if field.__dict__.get('primary_key')
-            ]
+            unique_fields=['platform_id']
         )
+        logger.info(f"Bulk create/update for {model_class.__name__} completed successfully")
+        return inserted_objects
+        
     except Exception as e:
-        print(f"Error during bulk create/update for {model_class.__name__}: {str(e)}")
+        logger.error(f"Error during bulk create/update for {model_class.__name__}: {str(e)}")
         return None
