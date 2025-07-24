@@ -86,3 +86,67 @@ resource "google_secret_manager_secret" "DB_PASSWORD" {
   }
   depends_on = [google_project_service.secret_manager]
 }
+
+resource "google_secret_manager_secret" "PASSWORD_ADC" {
+  secret_id = "PASSWORD_ADC"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_ADC" {
+  secret_id = "URL_ADC"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_ADC_COURSE" {
+  secret_id = "URL_ADC_COURSE"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_LOGIN_ADC" {
+  secret_id = "URL_LOGIN_ADC"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_LOGIN_NEW_PLATFORM" {
+  secret_id = "URL_LOGIN_NEW_PLATFORM"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_NEW_PLATFORM" {
+  secret_id = "URL_NEW_PLATFORM"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "URL_NEW_PLATFORM_TRAINING" {
+  secret_id = "URL_NEW_PLATFORM_TRAINING"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "USERNAME_ADC" {
+  secret_id = "USERNAME_ADC"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.secret_manager]
+}
